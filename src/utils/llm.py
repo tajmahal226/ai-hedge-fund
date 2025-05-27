@@ -37,8 +37,8 @@ def call_llm(
     model_info = get_model_info(model_name)
     llm = get_model(model_name, model_provider)
 
-    # For non-JSON support models, we can use structured output
-    if not (model_info and not model_info.has_json_mode()):
+    # Use JSON mode when the model supports it
+    if model_info and model_info.has_json_mode():
         llm = llm.with_structured_output(
             pydantic_model,
             method="json_mode",
@@ -77,13 +77,13 @@ def create_default_response(model_class: Type[T]) -> T:
     """Creates a safe default response based on the model's fields."""
     default_values = {}
     for field_name, field in model_class.model_fields.items():
-        if field.annotation == str:
+        if field.annotation is str:
             default_values[field_name] = "Error in analysis, using default"
-        elif field.annotation == float:
+        elif field.annotation is float:
             default_values[field_name] = 0.0
-        elif field.annotation == int:
+        elif field.annotation is int:
             default_values[field_name] = 0
-        elif hasattr(field.annotation, "__origin__") and field.annotation.__origin__ == dict:
+        elif hasattr(field.annotation, "__origin__") and field.annotation.__origin__ is dict:
             default_values[field_name] = {}
         else:
             # For other types (like Literal), try to use the first allowed value
